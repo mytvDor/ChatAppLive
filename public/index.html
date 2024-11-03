@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Chat App</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            height: 100%;
+            background-color: #f0f2f5;
+        }
+        .chat-container {
+            max-width: 800px;
+            margin: 0 auto;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            background-color: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .chat-header {
+            background-color: #0064e6;
+            color: white;
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+        }
+        .chat-header h2 {
+            margin: 0;
+            font-size: 18px;
+        }
+        .chat-messages {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        .message {
+          width: auto;
+            max-width: 60%;
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 18px;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        .message-time {
+            font-size: 11px;
+            color: #8e8e8e;
+            margin-top: 5px;
+        }
+        .received {
+            background-color: #f1f0f0;
+            color: black;
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+        .sent {
+            background-color: #0064e6;
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+            margin-left: auto;
+        }
+        .sent .message-time {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        .chat-input {
+            display: flex;
+            padding: 10px;
+            border-top: 1px solid #e5e5e5;
+        }
+        .chat-input input {
+            flex-grow: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 20px;
+            background-color: #f0f2f5;
+            margin-right: 10px;
+        }
+        .chat-input button {
+            background-color: #0064e6;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+        }
+        .username {
+            font-size: 12px; /* Smaller font for username */
+            font-weight: bold;
+        }
+        #code-form {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        #code-form {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    width:200px;
+    align-items: center;
+    margin-bottom: 10px;
+    background-color: #f9f9f9; /* Light background for the form */
+    border-radius: 10px; /* Rounded corners */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+}
+
+#code-input,
+#user-input {
+    width: 100%; /* Full width inputs */
+    padding: 10px; /* Padding for comfort */
+    margin: 10px 0; /* Spacing between inputs */
+    border: 1px solid #ddd; /* Light gray border */
+    border-radius: 5px; /* Rounded corners for inputs */
+    font-size: 16px; /* Font size for readability */
+}
+
+#code-input:focus,
+#user-input:focus {
+    border-color: #0064e6; /* Dark green border on focus */
+    outline: none; /* Remove default outline */
+}
+
+button[type="submit"] {
+    background-color: #0064e6; /* Button background color */
+    color: white; /* Button text color */
+    border: none; /* Remove default border */
+    border-radius: 5px; /* Rounded corners */
+    padding: 10px 20px; /* Padding for the button */
+    font-size: 16px; /* Font size for readability */
+    cursor: pointer; /* Pointer cursor on hover */
+    transition: background-color 0.3s; /* Transition for hover effect */
+}
+
+button[type="submit"]:hover {
+    background-color: #0045a0; /* Darker green on hover */
+}
+
+.CodeForm{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 100px;
+}
+
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h2>Secure Chat App</h2>
+        </div>
+      <div class="CodeForm">  <form id="code-form">
+        <input id="code-input" type="text" placeholder="Enter a secret code" required />
+        <input id="user-input" type="text" placeholder="Enter your name" required />
+        <br>
+        <button type="submit">Join Chat</button>
+    </form></div>
+        <div class="chat-messages" id="chat-box" style="display: none;"></div>
+        <div class="chat-input" style="display: none;">
+            <input id="message-input" type="text" placeholder="Type a message..." />
+            <button id="send-button">➤</button>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+
+        const chatBox = document.getElementById("chat-box");
+        const messageInput = document.getElementById("message-input");
+        const sendButton = document.getElementById("send-button");
+        const codeForm = document.getElementById("code-form");
+        const codeInput = document.getElementById("code-input");
+
+        let username;
+
+        // Handle form submission to join chat
+        codeForm.addEventListener("submit", function (event) {
+            event.preventDefault(); // Prevent form submission
+
+            username = document.getElementById("user-input").value; // Get username
+            const secretCode = codeInput.value; // Get secret code (you can use it as needed)
+
+            // Optionally validate the secret code here
+
+            // Show chat messages and input
+            chatBox.style.display = 'block';
+            document.querySelector('.chat-input').style.display = 'flex';
+            codeForm.style.display = 'none'; // Hide the form
+        });
+
+        // Handle sending chat messages
+        sendButton.addEventListener("click", function () {
+            const message = messageInput.value;
+            if (message.trim()) {
+                socket.emit("chat", { username, message });
+                addMessageToChatBox(username, message, true);
+                messageInput.value = "";
+            }
+        });
+
+        // Display chat messages from other users
+        socket.on("chat", function ({ username: sender, message }) {
+            const isOwnMessage = sender === username;
+            addMessageToChatBox(sender, message, isOwnMessage);
+        });
+
+        // Utility function to add messages to the chat box
+        function addMessageToChatBox(sender, message, isOwnMessage) {
+            const messageElement = document.createElement("div");
+            messageElement.classList.add("message");
+            messageElement.classList.add(isOwnMessage ? "sent" : "received");
+
+            // Add username at the top of the message
+            const usernameElement = document.createElement("div");
+            usernameElement.classList.add("username");
+            usernameElement.style.color = getRandomColor(); // Random color for each message
+            usernameElement.textContent = sender;
+            messageElement.appendChild(usernameElement);
+
+            const textElement = document.createElement("p");
+            textElement.textContent = message;
+            messageElement.appendChild(textElement);
+
+            const timeElement = document.createElement("div");
+            timeElement.classList.add("message-time");
+            timeElement.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            messageElement.appendChild(timeElement);
+
+            chatBox.appendChild(messageElement);
+            chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll to the latest message
+        }
+
+        // Function to generate random color
+        function getRandomColor() {
+            const letters = '0123456789ABCDEF';
+            let color = '#';
+            for (let i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        }
+    </script>
+</body>
+</html>
